@@ -4,6 +4,7 @@ import com.yorusito.backend.auth.dto.AuthResponse;
 import com.yorusito.backend.auth.dto.LoginRequest;
 import com.yorusito.backend.auth.dto.RegistroRequest;
 import com.yorusito.backend.auth.service.AuthService;
+import com.yorusito.backend.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,11 +19,15 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
     @PostMapping("/register")
     @Operation(summary = "Registrar nuevo usuario", description = "Registra un nuevo usuario en el sistema")
     public ResponseEntity<AuthResponse> registrar(@Valid @RequestBody RegistroRequest request) {
-        return ResponseEntity.ok(authService.registrar(request));
+        AuthResponse response = authService.registrar(request);
+        // Crear perfil por defecto para el usuario
+        userService.getUserProfile(response.getEmail());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")

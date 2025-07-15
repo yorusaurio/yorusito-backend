@@ -37,6 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/productos/**").permitAll()
                         .requestMatchers("/api/categorias").permitAll()
+                        .requestMatchers("/api/reviews/producto/**").permitAll()
+                        .requestMatchers("/api/reviews/stats/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         // Endpoints Swagger/OpenAPI
                         .requestMatchers(
@@ -49,8 +51,12 @@ public class SecurityConfig {
                         // Endpoints que requieren autenticación
                         .requestMatchers("/api/carrito/**").authenticated()
                         .requestMatchers("/api/pedidos/**").authenticated()
+                        .requestMatchers("/api/user/**").authenticated()
+                        .requestMatchers("/api/reviews/**").authenticated()
+                        .requestMatchers("/api/notifications/**").authenticated()
                         // Endpoints de administrador
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/inventory/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

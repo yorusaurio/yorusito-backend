@@ -39,6 +39,33 @@ public class ProductoService {
                 .map(this::convertirAResponse);
     }
 
+    public Page<ProductoResponse> busquedaAvanzada(String search, Long categoriaId,
+                                                 java.math.BigDecimal precioMin, java.math.BigDecimal precioMax,
+                                                 Boolean enStock, String ordenarPor, String direccion,
+                                                 Pageable pageable) {
+        return productoRepository.busquedaAvanzada(search, categoriaId, precioMin, precioMax, enStock, pageable)
+                .map(this::convertirAResponse);
+    }
+
+    public List<ProductoResponse> obtenerProductosPopulares(int limit) {
+        return productoRepository.findProductosPopulares(limit)
+                .stream()
+                .map(this::convertirAResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ProductoResponse> obtenerProductosRelacionados(Long productoId) {
+        Producto producto = productoRepository.findById(productoId)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        return productoRepository.findByCategoriaIdAndActivoTrueAndIdNot(
+                producto.getCategoria().getId(), productoId)
+                .stream()
+                .limit(5)
+                .map(this::convertirAResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<ProductoResponse> obtenerPorCategoria(Long categoriaId) {
         return productoRepository.findByCategoriaIdAndActivoTrue(categoriaId)
                 .stream()

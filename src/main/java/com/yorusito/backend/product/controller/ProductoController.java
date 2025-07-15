@@ -48,6 +48,20 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.buscarProductos(search, pageable));
     }
 
+    @GetMapping("/buscar/avanzada")
+    @Operation(summary = "Búsqueda avanzada de productos", description = "Búsqueda avanzada con filtros múltiples")
+    public ResponseEntity<Page<ProductoResponse>> busquedaAvanzada(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) java.math.BigDecimal precioMin,
+            @RequestParam(required = false) java.math.BigDecimal precioMax,
+            @RequestParam(required = false) Boolean enStock,
+            @RequestParam(defaultValue = "nombre") String ordenarPor,
+            @RequestParam(defaultValue = "asc") String direccion,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(productoService.busquedaAvanzada(search, categoriaId, precioMin, precioMax, enStock, ordenarPor, direccion, pageable));
+    }
+
     @GetMapping("/categoria/{categoriaId}")
     @Operation(summary = "Obtener productos por categoría", description = "Lista productos de una categoría específica")
     public ResponseEntity<List<ProductoResponse>> obtenerPorCategoria(@PathVariable Long categoriaId) {
@@ -84,5 +98,18 @@ public class ProductoController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         productoService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/populares")
+    @Operation(summary = "Productos populares", description = "Obtiene productos populares basado en reviews")
+    public ResponseEntity<List<ProductoResponse>> obtenerProductosPopulares(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(productoService.obtenerProductosPopulares(limit));
+    }
+
+    @GetMapping("/relacionados/{id}")
+    @Operation(summary = "Productos relacionados", description = "Obtiene productos relacionados basado en la categoría")
+    public ResponseEntity<List<ProductoResponse>> obtenerProductosRelacionados(@PathVariable Long id) {
+        return ResponseEntity.ok(productoService.obtenerProductosRelacionados(id));
     }
 }

@@ -18,5 +18,7 @@ public class ErrorResponse {
     private int status;
     private LocalDateTime timestamp;
     private String path;
+    private String error;
+    private String message;
     private List<String> errores;
 }
