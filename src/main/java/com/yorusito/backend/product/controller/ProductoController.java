@@ -3,6 +3,7 @@ package com.yorusito.backend.product.controller;
 import com.yorusito.backend.product.dto.ProductoRequest;
 import com.yorusito.backend.product.dto.ProductoResponse;
 import com.yorusito.backend.product.service.ProductoService;
+import com.yorusito.backend.image.service.ImageUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -16,16 +17,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/productos")
+@RequestMapping("/productos")
 @RequiredArgsConstructor
 @Tag(name = "Productos", description = "Gestión de productos")
 public class ProductoController {
 
     private final ProductoService productoService;
+    private final ImageUploadService imageUploadService;
 
     @GetMapping
     @Operation(summary = "Obtener productos", description = "Lista productos con paginación opcional")
@@ -68,6 +72,17 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.obtenerPorCategoria(categoriaId));
     }
 
+    @GetMapping("/new-arrivals")
+    @Operation(summary = "Obtener nuevos llegados", description = "Lista los productos más recientemente agregados")
+    public ResponseEntity<List<ProductoResponse>> obtenerNuevosLlegados(
+            @Parameter(description = "Número máximo de productos a retornar") 
+            @RequestParam(defaultValue = "10") int limite) {
+        if (limite > 50) {
+            limite = 50; // Limitar máximo a 50 productos para evitar sobrecarga
+        }
+        return ResponseEntity.ok(productoService.obtenerNuevosLlegados(limite));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtener producto por ID", description = "Obtiene un producto específico por su ID")
     public ResponseEntity<ProductoResponse> obtenerPorId(@PathVariable Long id) {
@@ -81,6 +96,44 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> crear(@Valid @RequestBody ProductoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productoService.crear(request));
     }
+    
+    @PostMapping("/con-imagen")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Crear producto con imagen", description = "Crea un nuevo producto subiendo imagen automáticamente (solo administradores)",
+              security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ProductoResponse> crearConImagen(
+            @Parameter(description = "Imagen del producto") @RequestParam("imagen") MultipartFile imagen,
+            @Parameter(description = "Nombre del producto") @RequestParam("nombre") String nombre,
+            @Parameter(description = "Descripción del producto") @RequestParam(value = "descripcion", required = false) String descripcion,
+            @Parameter(description = "Precio del producto") @RequestParam("precio") BigDecimal precio,
+            @Parameter(description = "Stock del producto") @RequestParam("stock") Integer stock,
+            @Parameter(description = "ID de la categoría") @RequestParam("categoriaId") Long categoriaId,
+            @Parameter(description = "ID de la colección") @RequestParam(value = "coleccionId", required = false) Long coleccionId) {
+        
+        try {
+            // 1. Subir imagen primero
+            String imagenUrl = imageUploadService.uploadImage(imagen);
+            
+            // 2. Crear el request con la URL de la imagen
+            ProductoRequest request = ProductoRequest.builder()
+                    .nombre(nombre)
+                    .descripcion(descripcion)
+                    .precio(precio)
+                    .stock(stock)
+                    .imagenUrl(imagenUrl)
+                    .categoriaId(categoriaId)
+                    .coleccionId(coleccionId)
+                    .build();
+            
+            // 3. Crear el producto
+            ProductoResponse producto = productoService.crear(request);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(producto);
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Error procesando imagen: " + e.getMessage());
+        }
+    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -89,6 +142,50 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> actualizar(@PathVariable Long id, 
                                                       @Valid @RequestBody ProductoRequest request) {
         return ResponseEntity.ok(productoService.actualizar(id, request));
+    }
+    
+    @PutMapping("/{id}/con-imagen")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Actualizar producto con imagen", description = "Actualiza un producto existente con nueva imagen (solo administradores)",
+              security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ProductoResponse> actualizarConImagen(
+            @Parameter(description = "ID del producto") @PathVariable Long id,
+            @Parameter(description = "Nueva imagen del producto (opcional)") @RequestParam(value = "imagen", required = false) MultipartFile imagen,
+            @Parameter(description = "Nombre del producto") @RequestParam("nombre") String nombre,
+            @Parameter(description = "Descripción del producto") @RequestParam(value = "descripcion", required = false) String descripcion,
+            @Parameter(description = "Precio del producto") @RequestParam("precio") BigDecimal precio,
+            @Parameter(description = "Stock del producto") @RequestParam("stock") Integer stock,
+            @Parameter(description = "ID de la categoría") @RequestParam("categoriaId") Long categoriaId,
+            @Parameter(description = "ID de la colección") @RequestParam(value = "coleccionId", required = false) Long coleccionId,
+            @Parameter(description = "URL de imagen actual (si no se sube nueva)") @RequestParam(value = "imagenUrl", required = false) String imagenUrlActual) {
+        
+        try {
+            String imagenUrl = imagenUrlActual; // Usar la URL actual por defecto
+            
+            // Si se proporciona una nueva imagen, subirla
+            if (imagen != null && !imagen.isEmpty()) {
+                imagenUrl = imageUploadService.uploadImage(imagen);
+            }
+            
+            // Crear el request con los datos actualizados
+            ProductoRequest request = ProductoRequest.builder()
+                    .nombre(nombre)
+                    .descripcion(descripcion)
+                    .precio(precio)
+                    .stock(stock)
+                    .imagenUrl(imagenUrl)
+                    .categoriaId(categoriaId)
+                    .coleccionId(coleccionId)
+                    .build();
+            
+            // Actualizar el producto
+            ProductoResponse producto = productoService.actualizar(id, request);
+            
+            return ResponseEntity.ok(producto);
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Error procesando imagen: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

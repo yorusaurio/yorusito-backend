@@ -41,4 +41,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findProductosPopulares(@Param("limit") int limit);
     
     List<Producto> findByCategoriaIdAndActivoTrueAndIdNot(Long categoriaId, Long productoId);
+    
+    // Método para obtener nuevos llegados (productos más recientes)
+    List<Producto> findByActivoTrueOrderByFechaCreacionDesc(Pageable pageable);
 }

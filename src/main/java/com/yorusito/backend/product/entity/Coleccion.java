@@ -6,53 +6,59 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "productos")
+@Table(name = "colecciones")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Producto {
+public class Coleccion {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nombre;
     
     @Column(columnDefinition = "TEXT")
     private String descripcion;
     
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal precio;
-    
-    @Column(nullable = false)
-    private Integer stock;
-    
     @Column(name = "imagen_url")
     private String imagenUrl;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coleccion_id")
-    private Coleccion coleccion;
-    
-    @Column(name = "activo")
+    @Column(name = "activa")
     @Builder.Default
-    private Boolean activo = true;
+    private Boolean activa = true;
+    
+    @Column(name = "destacada")
+    @Builder.Default
+    private Boolean destacada = false;
+    
+    @Column(name = "temporada")
+    private String temporada; // "Verano 2025", "Invierno 2024", etc.
+    
+    @Column(name = "color_tematico")
+    private String colorTematico; // Color hex para el tema de la colección
+    
+    @Column(name = "fecha_inicio")
+    private LocalDateTime fechaInicio;
+    
+    @Column(name = "fecha_fin")
+    private LocalDateTime fechaFin;
     
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
     
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
+    
+    // Relación con productos
+    @OneToMany(mappedBy = "coleccion", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Producto> productos;
     
     @PrePersist
     protected void onCreate() {

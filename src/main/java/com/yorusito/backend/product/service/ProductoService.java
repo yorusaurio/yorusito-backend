@@ -1,14 +1,18 @@
 package com.yorusito.backend.product.service;
 
 import com.yorusito.backend.product.dto.CategoriaResponse;
+import com.yorusito.backend.product.dto.ColeccionResponse;
 import com.yorusito.backend.product.dto.ProductoRequest;
 import com.yorusito.backend.product.dto.ProductoResponse;
 import com.yorusito.backend.product.entity.Categoria;
+import com.yorusito.backend.product.entity.Coleccion;
 import com.yorusito.backend.product.entity.Producto;
 import com.yorusito.backend.product.repository.CategoriaRepository;
+import com.yorusito.backend.product.repository.ColeccionRepository;
 import com.yorusito.backend.product.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +25,7 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final ColeccionRepository coleccionRepository;
 
     public List<ProductoResponse> obtenerTodos() {
         return productoRepository.findByActivoTrue()
@@ -83,6 +88,12 @@ public class ProductoService {
         Categoria categoria = categoriaRepository.findById(request.getCategoriaId())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
+        Coleccion coleccion = null;
+        if (request.getColeccionId() != null) {
+            coleccion = coleccionRepository.findById(request.getColeccionId())
+                    .orElseThrow(() -> new RuntimeException("Colección no encontrada"));
+        }
+
         Producto producto = Producto.builder()
                 .nombre(request.getNombre())
                 .descripcion(request.getDescripcion())
@@ -90,6 +101,7 @@ public class ProductoService {
                 .stock(request.getStock())
                 .imagenUrl(request.getImagenUrl())
                 .categoria(categoria)
+                .coleccion(coleccion)
                 .build();
 
         producto = productoRepository.save(producto);
@@ -103,12 +115,19 @@ public class ProductoService {
         Categoria categoria = categoriaRepository.findById(request.getCategoriaId())
                 .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
 
+        Coleccion coleccion = null;
+        if (request.getColeccionId() != null) {
+            coleccion = coleccionRepository.findById(request.getColeccionId())
+                    .orElseThrow(() -> new RuntimeException("Colección no encontrada"));
+        }
+
         producto.setNombre(request.getNombre());
         producto.setDescripcion(request.getDescripcion());
         producto.setPrecio(request.getPrecio());
         producto.setStock(request.getStock());
         producto.setImagenUrl(request.getImagenUrl());
         producto.setCategoria(categoria);
+        producto.setColeccion(coleccion);
 
         producto = productoRepository.save(producto);
         return convertirAResponse(producto);
@@ -121,6 +140,14 @@ public class ProductoService {
         productoRepository.save(producto);
     }
 
+    public List<ProductoResponse> obtenerNuevosLlegados(int limite) {
+        List<Producto> productos = productoRepository.findByActivoTrueOrderByFechaCreacionDesc(
+                PageRequest.of(0, limite));
+        return productos.stream()
+                .map(this::convertirAResponse)
+                .collect(Collectors.toList());
+    }
+
     private ProductoResponse convertirAResponse(Producto producto) {
         CategoriaResponse categoriaResponse = CategoriaResponse.builder()
                 .id(producto.getCategoria().getId())
@@ -128,6 +155,24 @@ public class ProductoService {
                 .descripcion(producto.getCategoria().getDescripcion())
                 .fechaCreacion(producto.getCategoria().getFechaCreacion())
                 .build();
+
+        ColeccionResponse coleccionResponse = null;
+        if (producto.getColeccion() != null) {
+            coleccionResponse = ColeccionResponse.builder()
+                    .id(producto.getColeccion().getId())
+                    .nombre(producto.getColeccion().getNombre())
+                    .descripcion(producto.getColeccion().getDescripcion())
+                    .imagenUrl(producto.getColeccion().getImagenUrl())
+                    .temporada(producto.getColeccion().getTemporada())
+                    .colorTematico(producto.getColeccion().getColorTematico())
+                    .destacada(producto.getColeccion().getDestacada())
+                    .activa(producto.getColeccion().getActiva())
+                    .fechaInicio(producto.getColeccion().getFechaInicio())
+                    .fechaFin(producto.getColeccion().getFechaFin())
+                    .fechaCreacion(producto.getColeccion().getFechaCreacion())
+                    .fechaActualizacion(producto.getColeccion().getFechaActualizacion())
+                    .build();
+        }
 
         return ProductoResponse.builder()
                 .id(producto.getId())
@@ -137,6 +182,7 @@ public class ProductoService {
                 .stock(producto.getStock())
                 .imagenUrl(producto.getImagenUrl())
                 .categoria(categoriaResponse)
+                .coleccion(coleccionResponse)
                 .activo(producto.getActivo())
                 .fechaCreacion(producto.getFechaCreacion())
                 .fechaActualizacion(producto.getFechaActualizacion())
