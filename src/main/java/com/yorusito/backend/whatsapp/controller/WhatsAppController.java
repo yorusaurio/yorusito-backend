@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/whatsapp")
+@RequestMapping("/whatsapp")
 @RequiredArgsConstructor
 @Tag(name = "WhatsApp", description = "Integración con WhatsApp para ventas")
 public class WhatsAppController {

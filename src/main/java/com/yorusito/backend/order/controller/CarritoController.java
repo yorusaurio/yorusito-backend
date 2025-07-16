@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/carrito")
+@RequestMapping("/carrito")
 @RequiredArgsConstructor
 @Tag(name = "Carrito de Compras", description = "Gestión del carrito de compras del usuario")
 @SecurityRequirement(name = "bearerAuth")

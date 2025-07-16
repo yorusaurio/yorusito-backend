@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/pagos")
+@RequestMapping("/pagos")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Pagos", description = "API para gestión de pagos con Culqi")
